@@ -28,6 +28,13 @@ def parse_args():
     parser.add_argument("--gamma", type=float, default=0.95, help="discount factor")
     parser.add_argument("--batch-size", type=int, default=1024, help="number of episodes to optimize at the same time")
     parser.add_argument("--num-units", type=int, default=64, help="number of units in the mlp")
+    # Noise 
+    parser.add_argument("--obs-noise", type=float, default=0,help="noise level for observation")
+    parser.add_argument("--rew-noise", type=float, default=0,help="noise level for reward")
+    parser.add_argument("--act-noise", type=float, default=0,help="noise level for action")
+    parser.add_argument("--obs-bias", type=float, default=0,help="bias for observation")
+    parser.add_argument("--rew-bias", type=float, default=0,help="bias level for reward")
+    parser.add_argument("--act-bias", type=float, default=0,help="bias level for action")
     # Checkpointing
     parser.add_argument("--exp-name", type=str, default=None, help="name of the experiment")
     parser.add_argument("--save-dir", type=str, default="/tmp/policy/", help="directory in which training state and model should be saved")
@@ -99,7 +106,7 @@ def train(arglist):
             arglist.load_dir = arglist.save_dir
         if arglist.display or arglist.restore or arglist.benchmark:
             print('Loading previous state...')
-            U.load_state(arglist.load_dir)
+            # U.load_state(arglist.load_dir)
 
         episode_rewards = [0.0]  # sum of rewards for all agents
         agent_rewards = [[0.0] for _ in range(env.n)]  # individual agent reward
@@ -116,13 +123,22 @@ def train(arglist):
         while True:
             # get action
             action_n = [agent.action(obs) for agent, obs in zip(trainers,obs_n)]
+            for i, act_i in enumerate(action_n):
+                action_n[i] = act_i + np.random.normal(arglist.act_bias, arglist.act_noise, act_i.shape)
+
             # environment step
             new_obs_n, rew_n, done_n, info_n = env.step(action_n)
+            for i, obs_i in enumerate(new_obs_n):
+                new_obs_n[i] = obs_i + np.random.normal(arglist.obs_bias, arglist.obs_noise, obs_i.shape)
+            for i, rew_i in enumerate(rew_n):
+                rew_n[i] = rew_i + np.random.normal(arglist.rew_bias, arglist.rew_noise)
+
             episode_step += 1
             done = all(done_n)
             terminal = (episode_step >= arglist.max_episode_len)
             # collect experience
             for i, agent in enumerate(trainers):
+                # use the affected actions or the unaffected ones?
                 agent.experience(obs_n[i], action_n[i], rew_n[i], new_obs_n[i], done_n[i], terminal)
             obs_n = new_obs_n
 
