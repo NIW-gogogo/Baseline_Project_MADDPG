@@ -29,12 +29,12 @@ def parse_args():
     parser.add_argument("--batch-size", type=int, default=1024, help="number of episodes to optimize at the same time")
     parser.add_argument("--num-units", type=int, default=64, help="number of units in the mlp")
     # Noise 
-    parser.add_argument("--obs-noise", type=float, default=0,help="noise level for observation")
-    parser.add_argument("--rew-noise", type=float, default=0,help="noise level for reward")
-    parser.add_argument("--act-noise", type=float, default=0,help="noise level for action")
-    parser.add_argument("--obs-bias", type=float, default=0,help="bias for observation")
-    parser.add_argument("--rew-bias", type=float, default=0,help="bias level for reward")
-    parser.add_argument("--act-bias", type=float, default=0,help="bias level for action")
+    parser.add_argument("--obs-gaus-std", type=float, default=0,help="mean of Gaussian noise for observation")
+    parser.add_argument("--rew-gaus-std", type=float, default=0,help="std of Gaussian noise for reward")
+    parser.add_argument("--act-gaus-std", type=float, default=0,help="std of Gaussian noise for action")
+    parser.add_argument("--obs-gaus-mean", type=float, default=0,help="mean of Gaussian noise for observation")
+    parser.add_argument("--rew-gaus-mean", type=float, default=0,help="mean of Gaussian noise level for reward")
+    parser.add_argument("--act-gaus-mean", type=float, default=0,help="mean of Gaussian noise level for action")
     # Checkpointing
     parser.add_argument("--exp-name", type=str, default=None, help="name of the experiment")
     parser.add_argument("--save-dir", type=str, default="/tmp/policy/", help="directory in which training state and model should be saved")
@@ -124,14 +124,14 @@ def train(arglist):
             # get action
             action_n = [agent.action(obs) for agent, obs in zip(trainers,obs_n)]
             for i, act_i in enumerate(action_n):
-                action_n[i] = act_i + np.random.normal(arglist.act_bias, arglist.act_noise, act_i.shape)
+                action_n[i] = act_i + np.random.normal(arglist.act_gaus_mean, arglist.act_gaus_std, act_i.shape)
 
             # environment step
             new_obs_n, rew_n, done_n, info_n = env.step(action_n)
             for i, obs_i in enumerate(new_obs_n):
-                new_obs_n[i] = obs_i + np.random.normal(arglist.obs_bias, arglist.obs_noise, obs_i.shape)
+                new_obs_n[i] = obs_i + np.random.normal(arglist.obs_gaus_mean, arglist.obs_gaus_std, obs_i.shape)
             for i, rew_i in enumerate(rew_n):
-                rew_n[i] = rew_i + np.random.normal(arglist.rew_bias, arglist.rew_noise)
+                rew_n[i] = rew_i + np.random.normal(arglist.rew_gaus_mean, arglist.rew_gaus_std)
 
             episode_step += 1
             done = all(done_n)
