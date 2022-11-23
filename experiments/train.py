@@ -29,12 +29,36 @@ def parse_args():
     parser.add_argument("--batch-size", type=int, default=1024, help="number of episodes to optimize at the same time")
     parser.add_argument("--num-units", type=int, default=64, help="number of units in the mlp")
     # Noise 
-    parser.add_argument("--obs-gaus-std", type=float, default=0,help="mean of Gaussian noise for observation")
-    parser.add_argument("--rew-gaus-std", type=float, default=0,help="std of Gaussian noise for reward")
-    parser.add_argument("--act-gaus-std", type=float, default=0,help="std of Gaussian noise for action")
-    parser.add_argument("--obs-gaus-mean", type=float, default=0,help="mean of Gaussian noise for observation")
-    parser.add_argument("--rew-gaus-mean", type=float, default=0,help="mean of Gaussian noise level for reward")
-    parser.add_argument("--act-gaus-mean", type=float, default=0,help="mean of Gaussian noise level for action")
+    ## Gaussian
+    parser.add_argument("--obs-gaus-std", type=float, help="mean of Gaussian noise for observation")
+    parser.add_argument("--rew-gaus-std", type=float, help="std of Gaussian noise for reward")
+    parser.add_argument("--act-gaus-std", type=float, help="std of Gaussian noise for action")
+    parser.add_argument("--obs-gaus-mean", type=float, help="mean of Gaussian noise for observation")
+    parser.add_argument("--rew-gaus-mean", type=float, help="mean of Gaussian noise level for reward")
+    parser.add_argument("--act-gaus-mean", type=float, help="mean of Gaussian noise level for action")
+    ## Uniform
+    parser.add_argument("--obs-unif-high", type=float, help="Upper bound of the uniform interval of the noise for observation")
+    parser.add_argument("--obs-unif-low", type=float, help="Lower bound of the uniform interval of the noise for observation")
+    ## Laplace
+    parser.add_argument("--obs-laplace-mean", type=float, help="mean of Laplace noise for observation")
+    parser.add_argument("--obs-laplace-decay", type=float, help="decay of Laplace noise for observation")
+    ## Beta
+    parser.add_argument("--obs-beta-a", type=float, help="a of beta noise for observation")
+    parser.add_argument("--obs-beta-b", type=float, help="b of beta noise for observation")
+    ## Gamma
+    parser.add_argument("--obs-gamma-shape", type=float, help="shape of gamma noise for observation")
+    parser.add_argument("--obs-gamma-scale", type=float, help="scale of gamma noise for observation")
+    ## Gumbel
+    parser.add_argument("--obs-gumbel-mode", type=float,help="mode of gumbel noise for observation")
+    parser.add_argument("--obs-gumbel-scale", type=float, help="scale of gumbel noise for observation")
+    ## Wald
+    parser.add_argument("--obs-wald-mean", type=float, help="mean of wald noise for observation")
+    parser.add_argument("--obs-wald-scale", type=float, help="scale of wald noise for observation")
+    ## logistic
+    parser.add_argument("--obs-logistic-mean", type=float, help="mean of logistic noise for observation")
+    parser.add_argument("--obs-logistic-scale", type=float, help="scale of logistic noise for observation")
+
+
     # Checkpointing
     parser.add_argument("--exp-name", type=str, default=None, help="name of the experiment")
     parser.add_argument("--save-dir", type=str, default="/tmp/policy/", help="directory in which training state and model should be saved")
@@ -124,14 +148,32 @@ def train(arglist):
             # get action
             action_n = [agent.action(obs) for agent, obs in zip(trainers,obs_n)]
             for i, act_i in enumerate(action_n):
-                action_n[i] = act_i + np.random.normal(arglist.act_gaus_mean, arglist.act_gaus_std, act_i.shape)
+                if arglist.act_gaus_mean is not None and arglist.act_gaus_std is not None:
+                    action_n[i] = act_i + np.random.normal(arglist.act_gaus_mean, arglist.act_gaus_std, act_i.shape)
 
             # environment step
             new_obs_n, rew_n, done_n, info_n = env.step(action_n)
             for i, obs_i in enumerate(new_obs_n):
-                new_obs_n[i] = obs_i + np.random.normal(arglist.obs_gaus_mean, arglist.obs_gaus_std, obs_i.shape)
+                if arglist.obs_gaus_mean is not None and arglist.obs_gaus_std is not None:
+                    new_obs_n[i] = obs_i + np.random.normal(arglist.obs_gaus_mean, arglist.obs_gaus_std, obs_i.shape)
+                if arglist.obs_unif_low is not None and arglist.obs_unif_high is not None:
+                    new_obs_n[i] = obs_i + np.random.uniform(arglist.obs_unif_low, arglist.obs_unif_high, obs_i.shape)
+                if arglist.obs_laplace_mean is not None and arglist.obs_laplace_decay is not None:
+                    new_obs_n[i] = obs_i + np.random.laplace(arglist.obs_laplace_mean, arglist.obs_laplace_decay, obs_i.shape)
+                if arglist.obs_beta_a is not None and arglist.obs_beta_b is not None:
+                    new_obs_n[i] = obs_i + np.random.beta(arglist.obs_beta_a, arglist.obs_beta_b, obs_i.shape)
+                if arglist.obs_gamma_shape is not None and arglist.obs_gamma_scale is not None:
+                    new_obs_n[i] = obs_i + np.random.gamma(arglist.obs_gamma_shape, arglist.obs_gamma_scale, obs_i.shape)
+                if arglist.obs_gumbel_mode is not None and arglist.obs_gumbel_scale is not None:
+                    new_obs_n[i] = obs_i + np.random.gumbel(arglist.obs_gumbel_mode, arglist.obs_gumbel_scale, obs_i.shape)
+                if arglist.obs_wald_mean is not None and arglist.obs_wald_scale is not None:
+                    new_obs_n[i] = obs_i + np.random.wald(arglist.obs_wald_mean, arglist.obs_wald_scale, obs_i.shape)
+                if arglist.obs_logistic_mean is not None and arglist.obs_logistic_scale is not None:
+                    new_obs_n[i] = obs_i + np.random.logistic(arglist.obs_logistic_mean, arglist.obs_logistic_scale, obs_i.shape)
+
             for i, rew_i in enumerate(rew_n):
-                rew_n[i] = rew_i + np.random.normal(arglist.rew_gaus_mean, arglist.rew_gaus_std)
+                if arglist.rew_gaus_mean is not None and arglist.rew_gaus_std is not None:
+                    rew_n[i] = rew_i + np.random.normal(arglist.rew_gaus_mean, arglist.rew_gaus_std)
 
             episode_step += 1
             done = all(done_n)
