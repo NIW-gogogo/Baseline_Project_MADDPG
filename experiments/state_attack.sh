@@ -15,8 +15,8 @@ done
 echo "Attack state with uniform noise"
 for high in 0.001 0.05 0.1 0.25 0.5 1 2 3
 do
-    echo "python train.py --scenario simple_reference --save-dir models/s1/ma_s1_e20/ --exp-name ma_s1_e20_unif_h$high --benchmark --obs-unif-low 0 --obs-unif-high $high"
-    python train.py --scenario simple_reference --save-dir models/s1/ma_s1_e20/ --exp-name ma_s1_e20_unif_h$high --benchmark --obs-unif-low 0 --obs-unif-high $high
+    echo "python train.py --scenario simple_reference --save-dir models/s1/ma_s1_e20/ --exp-name ma_s1_e20_unif_h$high --benchmark --obs-unif-low -$high --obs-unif-high $high"
+    python train.py --scenario simple_reference --save-dir models/s1/ma_s1_e20/ --exp-name ma_s1_e20_unif_h$high --benchmark --obs-unif-low -$high --obs-unif-high $high
 done
 
 echo "Attack state with Gaussian noise"
