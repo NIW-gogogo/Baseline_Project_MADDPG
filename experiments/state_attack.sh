@@ -3,6 +3,8 @@ echo "Start simple_reference experiment"
 # Instruction: to run experiment for another senario for example s2, do the following:
 #     Replace all "s1" in the commands by "s2"
 #     Replace the name "simple_reference" to that of s2, that is, "simple_speaker_listener". 
+#     See at the end of this file the names of all scenarios.
+
 
 echo "Attack state with Laplace noise"
 for mean in -3 -2 -1 0.001 0.05 0.1 0.25 0.5 1 2 3
